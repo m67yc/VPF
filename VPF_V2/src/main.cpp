@@ -22,7 +22,7 @@ float startPressure = 1030;
 bool autoMovement = 0;
 bool first_time_pulling = 0;
 
-
+long previousMillis = millis();
 
 void moveMotor(uint8_t MotorSpeed1, uint8_t MotorSpeed2)
 {
@@ -39,8 +39,6 @@ void LCDprint(uint8_t columns, uint8_t rows, char words, char num = 'q')
   if (num != 'q')
     lcd.print(num);
 }
-
-
 
 void setup()
 {
@@ -69,9 +67,14 @@ void loop()
 {
   pressure_sensor.read();
   lcd.clear();
-  previousPressure = currentPressure;
   currentPressure = pressure_sensor.pressure();
   LCDprint(0, 0, "Pressure: ", pressure_sensor.pressure());
+
+  if (millis() - previousMillis = 10)
+  {
+    previousPressure = currentPressure;
+    previousMillis = millis();
+  }
 
   if (autoMovement == 0)
   {
@@ -90,7 +93,8 @@ void loop()
         LCDprint(0, 1, "Rising!");
         moveMotor(0, 255);
       }
-      else{
+      else
+      {
         LCDprint(0, 1, "Stopping!");
         moveMotor(0, 0);
       }
