@@ -143,6 +143,7 @@ void loop()
         }
         else
         {
+          max_errorPressure = currentPressure + (errorPressure + 3);
           lcd.setCursor(0, 1);
           lcd.print("Stopping!");
           moveMotor(90, 0);
@@ -163,6 +164,7 @@ void loop()
         }
         else
         {
+          min_errorPressure = currentPressure - (errorPressure + 3);
           lcd.setCursor(0, 1);
           lcd.print("Stopping!");
           moveMotor(0, 90);
