@@ -25,7 +25,7 @@ bool first_time_pulling = 0;
 long previousMillis = millis();
 
 uint16_t max_errorPressure = tgtPressure, min_errorPressure = tgtPressure;
-uint8_t errorPressure = 1;
+uint8_t errorPressure = 4;
 
 void moveMotor(uint8_t MotorSpeed1, uint8_t MotorSpeed2)
 {
@@ -115,12 +115,13 @@ void loop()
         lcd.setCursor(0, 1);
         lcd.print("Sinking!");
         moveMotor(255, 0);
-        minPressure = currentPressure;
 
         if (currentPressure > previousPressure + 2) /* now higher than pass -> it is sinking -> stop */
         {
+          minPressure = currentPressure;
           first_time_pulling = 1;
           moveMotor(0, 0);
+          lcd.print("Stopping!");
         }
       }
       else if (currentPressure > (tgtPressure + 5) && currentPressure < (tgtPressure - 5)) /* very neer tgt -> stop */
@@ -146,7 +147,7 @@ void loop()
           max_errorPressure = currentPressure + (errorPressure + 3);
           lcd.setCursor(0, 1);
           lcd.print("Stopping!");
-          moveMotor(90, 0);
+          moveMotor(100, 0);
           moveMotor(0, 0);
         }
       }
@@ -167,7 +168,7 @@ void loop()
           min_errorPressure = currentPressure - (errorPressure + 3);
           lcd.setCursor(0, 1);
           lcd.print("Stopping!");
-          moveMotor(0, 90);
+          moveMotor(0, 100);
           moveMotor(0, 0);
         }
       }
