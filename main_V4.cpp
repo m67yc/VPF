@@ -14,10 +14,10 @@ constexpr uint8_t PULL_SWITCH = A3;
 const uint8_t MotorPin1 = 5;
 const uint8_t MotorPin2 = 6;
 
-const uint8_t momentumAdjustment = 10;
-const uint16_t tgtPressure = 1040;
 float currentPressure, previousPressure;
-float startPressure = 1030;
+const uint16_t tgtPressure = 1055;
+float startPressure = 1023;
+float minPressure = 0;
 
 bool autoMovement = 0;
 bool first_time_pulling = 0;
@@ -25,7 +25,7 @@ bool first_time_pulling = 0;
 long previousMillis = millis();
 
 uint16_t max_errorPressure = tgtPressure, min_errorPressure = tgtPressure;
-uint8_t errorPressure = 3;
+uint8_t errorPressure = 1;
 
 void moveMotor(uint8_t MotorSpeed1, uint8_t MotorSpeed2)
 {
@@ -33,14 +33,6 @@ void moveMotor(uint8_t MotorSpeed1, uint8_t MotorSpeed2)
   MotorSpeed2 = constrain(MotorSpeed2, 0, 255);
   analogWrite(MotorPin1, MotorSpeed1);
   analogWrite(MotorPin2, MotorSpeed2);
-}
-
-void LCDprint(uint8_t columns, uint8_t rows, char words, char num = 'q')
-{
-  lcd.setCursor(columns, rows);
-  lcd.print(words);
-  if (num != 'q')
-    lcd.print(num);
 }
 
 void setup()
@@ -71,7 +63,9 @@ void loop()
   pressure_sensor.read();
   lcd.clear();
   currentPressure = pressure_sensor.pressure();
-  LCDprint(0, 0, "Pressure: ", pressure_sensor.pressure());
+  lcd.setCursor(0, 0);
+  lcd.print("Pressure: ");
+  lcd.print(pressure_sensor.pressure());
 
   if (millis() - previousMillis == 10)
   {
@@ -81,31 +75,36 @@ void loop()
 
   if (autoMovement == 0)
   {
-    LCDprint(0, 2, "Manual mode");
+    lcd.setCursor(0, 2);
+    lcd.print("Manual mode");
     if (digitalRead(MANUAL_SWITCH)) /* A1 LOW -> Auto mode */
       autoMovement = 1;
     else
     {
       if (!digitalRead(PULL_SWITCH) && digitalRead(PUSH_SWITCH)) /* A2 high -> sinking */
       {
-        LCDprint(0, 1, "Sinking!");
+        lcd.setCursor(0, 1);
+        lcd.print("Sinking!");
         moveMotor(255, 0);
       }
       else if (digitalRead(PULL_SWITCH) && !digitalRead(PUSH_SWITCH)) /* A3 high -> rising */
       {
-        LCDprint(0, 1, "Rising!");
+        lcd.setCursor(0, 1);
+        lcd.print("Rising!");
         moveMotor(0, 255);
       }
       else
       {
-        LCDprint(0, 1, "Stopping!");
+        lcd.setCursor(0, 1);
+        lcd.print("Stopping!");
         moveMotor(0, 0);
       }
     }
   }
   else
   {
-    LCDprint(0, 2, "Auto mode");
+    lcd.setCursor(0, 2);
+    lcd.print("Auto mode!");
 
     if (currentPressure < startPressure) /* not work before in water */
       moveMotor(0, 0);
@@ -113,8 +112,10 @@ void loop()
     {
       if (first_time_pulling == 0)
       {
-        LCDprint(0, 1, "Sinking!");
+        lcd.setCursor(0, 1);
+        lcd.print("Sinking!");
         moveMotor(255, 0);
+        minPressure = currentPressure;
 
         if (currentPressure > previousPressure + 2) /* now higher than pass -> it is sinking -> stop */
         {
@@ -124,40 +125,47 @@ void loop()
       }
       else if (currentPressure > (tgtPressure + 5) && currentPressure < (tgtPressure - 5)) /* very neer tgt -> stop */
       {
-        LCDprint(0, 1, "Stopped!");
+        lcd.setCursor(0, 1);
+        lcd.print("Stopping!");
         moveMotor(0, 0);
       }
       else if (currentPressure > tgtPressure) /* under tgt */
       {
         min_errorPressure = tgtPressure;
-        if(max_errorPressure < currentPressure)
+        if (max_errorPressure < currentPressure)
           max_errorPressure = currentPressure;
 
         if (max_errorPressure - currentPressure <= errorPressure + 1) /* now under pass -> it is sinking -> let it float */
         {
-          LCDprint(0, 1, "Floating!");
+          lcd.setCursor(0, 1);
+          lcd.print("Floating!");
           moveMotor(0, 100);
         }
         else
         {
-          LCDprint(0, 1, "Stopped!");
+          lcd.setCursor(0, 1);
+          lcd.print("Stopping!");
+          moveMotor(90, 0);
           moveMotor(0, 0);
         }
       }
       else /* higher than tgt */
       {
         max_errorPressure = tgtPressure;
-        if(min_errorPressure > currentPressure)
+        if (min_errorPressure > currentPressure && currentPressure < minPressure)
           min_errorPressure = currentPressure;
 
         if (currentPressure - min_errorPressure <= errorPressure + 1) /* now higher than pass -> it is floating -> let it sink */
         {
-          LCDprint(0, 1, "Sinking!");
+          lcd.setCursor(0, 1);
+          lcd.print("Sinking!");
           moveMotor(100, 0);
         }
         else
         {
-          LCDprint(0, 1, "Stopped!");
+          lcd.setCursor(0, 1);
+          lcd.print("Stopping!");
+          moveMotor(0, 90);
           moveMotor(0, 0);
         }
       }
