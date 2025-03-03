@@ -4,26 +4,9 @@
 #include <hd44780.h>
 #include <hd44780ioClass/hd44780_I2Cexp.h>
 
-#include <SPI.h>
-#include <nRF24L01.h>
-#include <RF24.h>
-
-RF24 radio(8, 7); /* CE, CSN */
 hd44780_I2Cexp lcd;
 MS5837 pressure_sensor;
 
-/* communication */
-const byte address[6] = "14514";
-const byte oaddress[6] = "19198";
-
-const int QUEUE_LEN = 180;
-char queue[QUEUE_LEN + 10];
-byte serial_reader[1];
-int st = 0, en = 0, size = 0;
-int tick = 0;
-int status = 0;
-
-/*  */
 constexpr uint8_t MANUAL_SWITCH = A1;
 constexpr uint8_t PUSH_SWITCH = A2;
 constexpr uint8_t PULL_SWITCH = A3;
@@ -31,15 +14,13 @@ constexpr uint8_t PULL_SWITCH = A3;
 const uint8_t MotorPin1 = 5;
 const uint8_t MotorPin2 = 6;
 
-float currentPressure, previousPressure;
+float currentPressure;
 const uint16_t tgtPressure = 1055;
 float startPressure = 1023;
-float minPressure = 0;
+float minPressure = 10000;
 
 bool autoMovement = 0;
 bool first_time_pulling = 0;
-
-long previousMillis = millis();
 
 uint16_t max_errorPressure = tgtPressure, min_errorPressure = tgtPressure;
 uint8_t errorPressure = 2;
@@ -73,11 +54,6 @@ void setup()
   pinMode(MANUAL_SWITCH, INPUT_PULLUP);
   pinMode(PUSH_SWITCH, INPUT_PULLUP);
   pinMode(PULL_SWITCH, INPUT_PULLUP);
-
-  radio.begin();
-  radio.openWritingPipe(address);
-  radio.setPALevel(RF24_PA_HIGH);
-  radio.stopListening();
 }
 
 void loop()
@@ -88,12 +64,6 @@ void loop()
   lcd.setCursor(0, 0);
   lcd.print("Pressure: ");
   lcd.print(pressure_sensor.pressure());
-
-  if (millis() - previousMillis >= 10)
-  {
-    previousPressure = currentPressure;
-    previousMillis = millis();
-  }
 
   if (autoMovement == 0)
   {
@@ -132,20 +102,23 @@ void loop()
       moveMotor(0, 0);
     else
     {
-      if (first_time_pulling == 0)
+      if (first_time_pulling == 0 && (currentPressure - minPressure >= 1 || minPressure - currentPressure >= 1)) /* first time pulling */
       {
         lcd.setCursor(0, 1);
         lcd.print("Sinking!");
         moveMotor(255, 0);
 
-        if (currentPressure > previousPressure + 2) /* now higher than pass -> it is sinking -> stop */
+        if (currentPressure > minPressure + 2) /* now higher than pass -> it is sinking -> stop */
         {
-          minPressure = currentPressure;
+          minPressure = currentPressure + 2;
           first_time_pulling = 1;
           moveMotor(0, 0);
           lcd.print("Stopping!");
         }
       }
+
+      if(first_time_pulling == 0)
+        minPressure = currentPressure;
       else if (currentPressure > (tgtPressure + 5) && currentPressure < (tgtPressure - 5)) /* very neer tgt -> stop */
       {
         lcd.setCursor(0, 1);
