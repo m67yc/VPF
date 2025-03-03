@@ -3,10 +3,26 @@
 #include <MS5837.h>
 #include <hd44780.h>
 #include <hd44780ioClass/hd44780_I2Cexp.h>
+#include <SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
 
+RF24 radio(8, 7); /* CE, CSN */
 hd44780_I2Cexp lcd;
 MS5837 pressure_sensor;
 
+/* communication */
+const byte address[6] = "14514";
+const byte oaddress[6] = "19198";
+
+const int QUEUE_LEN = 180;
+char queue[QUEUE_LEN + 10];
+byte serial_reader[1];
+int st = 0, en = 0, size = 0;
+int tick = 0;
+int status = 0;
+
+/*  */
 constexpr uint8_t MANUAL_SWITCH = A1;
 constexpr uint8_t PUSH_SWITCH = A2;
 constexpr uint8_t PULL_SWITCH = A3;
