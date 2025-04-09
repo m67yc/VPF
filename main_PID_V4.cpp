@@ -277,7 +277,7 @@ void setSpeed(uint8_t speed)
     moveMotor(motorSpeed, 'D');
   else if (speed > 0 && currentSpeed > speed) // 要下降但當前下降速度快了
     moveMotor(motorSpeed, 'U');
-  else if(speed > 0 && abs(currentSpeed - speed) < 1) // 要下降當前下降速度剛好
+  else if (speed > 0 && abs(currentSpeed - speed) < 1) // 要下降當前下降速度剛好
   {
     moveMotor(0, 'S');
     downingPos = currentPos;
@@ -291,7 +291,8 @@ void setSpeed(uint8_t speed)
     moveMotor(0, 'S');
     upingPos = currentPos;
   }
-  else{
+  else
+  {
     moveMotor(0, 'S');
     neutralPos = currentPos;
   }
@@ -376,32 +377,36 @@ void loop()
     {
       if (currentPressure > tgtPressure + tgtPressureScope)
       {
-        if(!movePos(upingPos) && upingPos > 1 && millis() - waitingTime > 1000){
-          setSpeed(-1);
+        if (!movePos(upingPos) && upingPos > 1)
+        {
+          if (millis() - waitingTime > 1000)
+            setSpeed(-1);
         }
-        else if(upingPos == 0)
+        else if (upingPos == 0)
           setSpeed(-1);
         else
           waitingTime = millis();
       }
       else if (currentPressure < tgtPressure - tgtPressureScope)
       {
-        if(!movePos(downingPos) && downingPos > 1 && millis() - waitingTime > 1000){
-          setSpeed(1);
-          waitingTime = millis();
+        if (!movePos(downingPos) && downingPos > 1)
+        {
+          if (millis() - waitingTime > 1000)
+            setSpeed(1);
         }
-        else if(downingPos == 0)
+        else if (downingPos == 0)
           setSpeed(1);
         else
           waitingTime = millis();
       }
       else
       {
-        if(!movePos(neutralPos) && neutralPos > 1 && millis() - waitingTime > 1000){
-          setSpeed(0);
-          waitingTime = millis();
+        if (!movePos(neutralPos) && neutralPos > 1)
+        {
+          if (millis() - waitingTime > 1000)
+            setSpeed(0);
         }
-        else if(neutralPos == 0)
+        else if (neutralPos == 0)
           setSpeed(0);
         else
           waitingTime = millis();
