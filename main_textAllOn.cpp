@@ -116,6 +116,10 @@ void setup()
 void loop()
 {
   moveMotor(255, 'D');
+  delay(1000);
+  moveMotor(255, 'U');
+  delay(1000);
+
   lcd.setCursor(0, 1);
   lcd.print("12345678901234567890");
   lcd.setCursor(0, 2);
@@ -125,7 +129,14 @@ void loop()
   lcd.setCursor(0, 0);
   lcd.print("12345678901234567890");
 
-  leds[0] = CRGB::White;
-  leds[1] = CRGB::White;
+  FastLED.setBrightness(1);
+  leds[0] = CRGB::Amethyst;
+  leds[1] = CRGB::Aquamarine;
   LEDS.show();
+
+  Serial.print(digitalRead(MANUAL_SWITCH));
+  Serial.print("  ");
+  Serial.print(digitalRead(PULL_SWITCH));
+  Serial.print("  ");
+  Serial.println(digitalRead(PUSH_SWITCH));
 }
