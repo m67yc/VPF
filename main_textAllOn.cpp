@@ -14,15 +14,19 @@ CRGB leds[2];
 MS5837 pressure_sensor;
 
 /* communication */
-const byte address[6] = "14514";
-const byte oaddress[6] = "19198";
+#define CE_PIN 8
+#define CSN_PIN 7
 
-const int QUEUE_LEN = 180;
-char queue[QUEUE_LEN + 10];
-byte serial_reader[1];
-int st = 0, en = 0, size = 0;
-int tick = 0;
-int status = 0;
+const byte slaveAddress[6] = "88806";
+
+RF24 radio(CE_PIN, CSN_PIN);  // Create a Radio
+
+char dataToSend[10] = "Message 0";
+char txNum = '0';
+
+unsigned long currentMillis;
+unsigned long prevMillis;
+unsigned long txIntervalMillis = 1000;
 
 /*  */
 constexpr uint8_t MANUAL_SWITCH = A1;
@@ -88,6 +92,38 @@ void ManualMode()
   }
 }
 
+//================
+
+void send() {
+
+  bool rslt;
+  rslt = radio.write(&dataToSend, sizeof(dataToSend));
+  // Always use sizeof() as it gives the size as the number of bytes.
+  // For example if dataToSend was an int sizeof() would correctly return 2
+
+  Serial.print("Data Sent ");
+  Serial.print(dataToSend);
+  if (rslt) {
+      Serial.println("  Acknowledge received");
+      updateMessage();
+  }
+  else {
+      Serial.println("  Tx failed");
+      updateMessage();
+  }
+}
+
+//================
+
+void updateMessage() {
+  // so you can see that new data is being sent
+  txNum += 1;
+  if (txNum > '9') {
+    txNum = '0';
+  }
+  dataToSend[8] = txNum;
+}
+
 void setup()
 {
   lcd.begin(20, 4);
@@ -111,6 +147,20 @@ void setup()
   pinMode(MANUAL_SWITCH, INPUT_PULLUP);
   pinMode(PUSH_SWITCH, INPUT_PULLUP);
   pinMode(PULL_SWITCH, INPUT_PULLUP);
+
+  Serial.println("SimpleTx Starting");
+
+  while (!radio.begin())
+  {
+    Serial.println("radio hardware is not responding!!");
+  }
+  
+  radio.enableAckPayload();
+  radio.setChannel(90);
+  radio.setPALevel(RF24_PA_LOW);
+  radio.setDataRate(RF24_1MBPS);
+  radio.openWritingPipe(slaveAddress);
+  radio.stopListening();
 }
 
 void loop()
@@ -119,6 +169,12 @@ void loop()
   delay(1000);
   moveMotor(255, 'U');
   delay(1000);
+
+  currentMillis = millis();
+  if (currentMillis - prevMillis >= txIntervalMillis) {
+    send();
+    prevMillis = millis();
+  }
 
   lcd.setCursor(0, 1);
   lcd.print("12345678901234567890");
