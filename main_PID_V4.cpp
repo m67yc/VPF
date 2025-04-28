@@ -75,7 +75,6 @@ int8_t downingPos = 0;
 bool isNeutral = 0;
 bool isUping = 0;
 bool isDowning = 0;
-bool isPos0 = 0;
 
 /* Kalman Setting */
 float Q_process = 0.01; // 過程噪聲 (系統不確定性)
@@ -378,53 +377,45 @@ void loop()
     {
         lcd.setCursor(0, 2);
         lcd.print("Auto mode!");
-
-        if (!isPos0)
-        {
-            isPos0 = movePos(0);
-        }
+        if (currentPressure < startPressure) /* not work before in water */
+            moveMotor(0, 'S');
         else
         {
-            if (currentPressure < startPressure) /* not work before in water */
-                moveMotor(0, 'S');
+            if (currentPressure > tgtPressure + tgtPressureScope)
+            {
+                if (!movePos(upingPos) && upingPos > 1)
+                {
+                    if (millis() - waitingTime > 1000)
+                        setSpeed(-1);
+                }
+                else if (upingPos == 0)
+                    setSpeed(-1);
+                else
+                    waitingTime = millis();
+            }
+            else if (currentPressure < tgtPressure - tgtPressureScope)
+            {
+                if (!movePos(downingPos) && downingPos > 1)
+                {
+                    if (millis() - waitingTime > 1000)
+                        setSpeed(1);
+                }
+                else if (downingPos == 0)
+                    setSpeed(1);
+                else
+                    waitingTime = millis();
+            }
             else
             {
-                if (currentPressure > tgtPressure + tgtPressureScope)
+                if (!movePos(neutralPos) && neutralPos > 1)
                 {
-                    if (!movePos(upingPos) && upingPos > 1)
-                    {
-                        if (millis() - waitingTime > 1000)
-                            setSpeed(-1);
-                    }
-                    else if (upingPos == 0)
-                        setSpeed(-1);
-                    else
-                        waitingTime = millis();
-                }
-                else if (currentPressure < tgtPressure - tgtPressureScope)
-                {
-                    if (!movePos(downingPos) && downingPos > 1)
-                    {
-                        if (millis() - waitingTime > 1000)
-                            setSpeed(1);
-                    }
-                    else if (downingPos == 0)
-                        setSpeed(1);
-                    else
-                        waitingTime = millis();
-                }
-                else
-                {
-                    if (!movePos(neutralPos) && neutralPos > 1)
-                    {
-                        if (millis() - waitingTime > 1000)
-                            setSpeed(0);
-                    }
-                    else if (neutralPos == 0)
+                    if (millis() - waitingTime > 1000)
                         setSpeed(0);
-                    else
-                        waitingTime = millis();
                 }
+                else if (neutralPos == 0)
+                    setSpeed(0);
+                else
+                    waitingTime = millis();
             }
         }
     }
